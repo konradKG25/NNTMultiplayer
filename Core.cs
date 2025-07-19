@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using MelonLoader;
-using Steamworks;
 using UnityEngine;
 
 [assembly: MelonInfo(typeof(NNTMultiplayer.Core), "NNTMultiplayer", "1.0.0", "Konrad", null)]
@@ -15,10 +15,11 @@ namespace NNTMultiplayer;
 
 public class Core : MelonMod
 {
-    public static MultiplayerAbe myAbe;
-    public MultiplayerHandler handler;
-    public Rect winRect = new Rect(2, 2, 500, 300);
-    public string InviteCodeToConnect;
+    public static MultiplayerHandler handler;
+    public Rect winRect = new Rect(2, 2, 600, 400);
+    public static string InviteCodeToConnect;
+    public static bool isPaused = false;
+    public static Thread inputThread;
 
     public override void OnInitializeMelon()
     {
@@ -32,24 +33,28 @@ public class Core : MelonMod
         handler.StartListening(6000);
     }
 
-    public override void OnGUI()
+    public override void OnUpdate()
     {
-        winRect = GUI.Window(0, winRect, DrawUI, "NNT Tool");
+        if (Input.GetKeyDown(KeyCode.Minus) && !isPaused)
+        {
+            Pauser pauser = new Pauser();
+            pauser.PauseAndPrompt();
+        }
     }
 
     private void DrawUI(int windowID)
     {
+        GUI.depth = 0;
+
         GUI.Label(new Rect(10, 30, 100, 20), "Invite Code:");
-        InviteCodeToConnect = GUI.TextField(new Rect(110, 30, 170, 20), InviteCodeToConnect);
+        InviteCodeToConnect = GUI.TextField(new Rect(10, 60, 170, 20), InviteCodeToConnect);
 
         if (GUI.Button(new Rect(10, 60, 130, 30), "Connect"))
         {
-            InviteCodeToConnect = IPEncryption.DecryptIP(InviteCodeToConnect);
-            handler.SendMessage(InviteCodeToConnect, 6000, handler.SetupMyAbeMessage(IPAddress.Any.ToString(), "A"));
+            
         }
         if (GUI.Button(new Rect(150, 60, 130, 30), "Start Server"))
         {
-            MelonLogger.Msg(IPEncryption.EncryptIP(IPAddress.Any.ToString()));
         }
 
         GUI.DragWindow(new Rect(0, 0, 10000, 20));
@@ -58,10 +63,10 @@ public class Core : MelonMod
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)
     {
         float a = 0;
-        myAbe.sceneName = sceneName;
+        handler.myAbe.sceneName = sceneName;
         foreach (MultiplayerAbe multiplayerAbe in handler.multiplayerAbes)
         {
-            if (multiplayerAbe.sceneName == myAbe.sceneName)
+            if (multiplayerAbe.sceneName == handler.myAbe.sceneName)
             {
                 a++;
             }
@@ -74,7 +79,7 @@ public class Core : MelonMod
                 MultiplayerAbe tempAbe = handler.multiplayerAbes[b];
                 if (!tempAbe.isLocal)
                 {
-                    handler.SendMessage(multiplayerAbe.IP, 6000, "sceneName:" + sceneName + "," + myAbe.PlayerNumber);
+                    handler.SendMessage(multiplayerAbe.IP, 6000, "sceneName:" + sceneName + "," + handler.myAbe.PlayerNumber);
                     tempAbe.Abe = SpawnAnotherAbe(tempAbe.PlayerNumber);
                     handler.multiplayerAbes[b] = tempAbe;
                 }
@@ -83,32 +88,28 @@ public class Core : MelonMod
         else
         {
             int b = 0;
-            myAbe.Abe.gameObject.SetActive(false);
-            handler.SendMessageToOthers("sceneName:" + sceneName + "," + myAbe.PlayerNumber);
+            handler.myAbe.Abe.gameObject.SetActive(false);
+            handler.SendMessageToOthers("sceneName:" + sceneName + "," + handler.myAbe.PlayerNumber);
         }
     }
 
     public override void OnFixedUpdate()
     {
-        if (myAbe.Abe != null)
+        if (handler.myAbe.Abe != null)
         {
-            foreach (MultiplayerAbe multiplayerAbe in handler.multiplayerAbes)
-            {
-                if (!multiplayerAbe.isLocal)
-                {
-                }
-            }
+            handler.SendMessageToOthers("AbePosition:" + GetPos());
+            handler.SendMessageToOthers("AbeRotation:" + GetRot());
         }
     }
     
     public string GetPos()
     {
-        return myAbe.Abe.transform.position.x + "," + myAbe.Abe.transform.position.y + "," + myAbe.Abe.transform.position.z;
+        return handler.myAbe.Abe.transform.position.x + "," + handler.myAbe.Abe.transform.position.y + "," + handler.myAbe.Abe.transform.position.z + "," + handler.myAbe.IP;
     }
 
     public string GetRot()
     {
-        return myAbe.Abe.transform.rotation.x + "," + myAbe.Abe.transform.rotation.y + "," + myAbe.Abe.transform.rotation.z;
+        return handler.myAbe.Abe.transform.rotation.x + "," + handler.myAbe.Abe.transform.rotation.y + "," + handler.myAbe.Abe.transform.rotation.z + "," + handler.myAbe.IP;
     }
 
     public static GameObject SpawnAnotherAbe(int playerNumber)
@@ -194,6 +195,18 @@ public class MultiplayerHandler : MonoBehaviour
                         {
                             SetSceneNameForAbe(message);
                         }
+                        else if (message.StartsWith("mineExplode:"))
+                        {
+                            mineExplode(message);
+                        }
+                        else if (message.StartsWith("mineExplodeB:"))
+                        {
+                            mineExplodeB(message);
+                        }
+                        else if (message.StartsWith("mineExplodeC:"))
+                        {
+                            mineExplodeC(message);
+                        }
                     }
                     else
                     {
@@ -244,11 +257,10 @@ public class MultiplayerHandler : MonoBehaviour
         if (parts.Length >= 3 &&
             float.TryParse(parts[0], out float x) &&
             float.TryParse(parts[1], out float y) &&
-            float.TryParse(parts[2], out float z) &&
-            int.TryParse(parts[3], out int w))
+            float.TryParse(parts[2], out float z))
         {
             Vector3 newPos = new Vector3(x, y, z);
-            multiplayerAbes[w].Abe.transform.position = newPos;
+            FindConnectedByIP(parts[3]).Value.Abe.transform.position = newPos;
         }
     }
 
@@ -260,11 +272,10 @@ public class MultiplayerHandler : MonoBehaviour
         if (parts.Length >= 3 &&
             float.TryParse(parts[0], out float x) &&
             float.TryParse(parts[1], out float y) &&
-            float.TryParse(parts[2], out float z) &&
-            int.TryParse(parts[3], out int w))
+            float.TryParse(parts[2], out float z))
         {
             Quaternion newRot = Quaternion.Euler(x, y, z);
-            multiplayerAbes[w].Abe.transform.rotation = newRot;
+            FindConnectedByIP(parts[3]).Value.Abe.transform.rotation = newRot;
         }
     }
 
@@ -280,6 +291,7 @@ public class MultiplayerHandler : MonoBehaviour
         {
             string bb = message.Replace(",0", ",1");
             SendMessage(parts[0], 6000, bb);
+            SendMessageToOthers(bb);
         }
     }
 
@@ -317,14 +329,68 @@ public class MultiplayerHandler : MonoBehaviour
             b++;
         }
 
-        if (w == HowManyAbes && !Core.myAbe.Abe.activeSelf)
+        if (w == HowManyAbes && !myAbe.Abe.activeSelf)
         {
             int c = 0;
-            Core.myAbe.Abe.SetActive(true);
+            myAbe.Abe.SetActive(true);
             foreach (MultiplayerAbe abe in multiplayerAbes)
             {
                 MultiplayerAbe multiplayerAbe = multiplayerAbes[c];
                 multiplayerAbe.Abe = Core.SpawnAnotherAbe(abe.PlayerNumber);
+            }
+        }
+    }
+
+    public void mineExplode(string message)
+    {
+        string a = message.Split(':')[1];
+        int.TryParse(a, out var b);
+        int bb = 0;
+        foreach (FlyingMine flyingMine in GameObject.FindObjectsOfType<FlyingMine>())
+        {
+            if (bb == b)
+            {
+                flyingMine.Explode(true, flyingMine.m_damage, Explosion.ExplosionSource.FlyingMine);
+            }
+            else
+            {
+                bb++;
+            }
+        }
+    }
+
+    public void mineExplodeB(string message)
+    {
+        string a = message.Split(':')[1];
+        int.TryParse(a, out var b);
+        int bb = 0;
+        foreach (ProximityMine proximityMine in GameObject.FindObjectsOfType<ProximityMine>())
+        {
+            if (bb == b)
+            {
+                proximityMine.Explode(true, proximityMine.m_damage, Explosion.ExplosionSource.ProximityMine);
+            }
+            else
+            {
+                bb++;
+            }
+        }
+    }
+
+    public void mineExplodeC(string message)
+    {
+        string a = message.Split(':')[1];
+        int.TryParse(a, out var b);
+        int bb = 0;
+        foreach (ToggleMine toggleMine in GameObject.FindObjectsOfType<ToggleMine>())
+        {
+            if (bb == b)
+            {
+                toggleMine.Explode(true, toggleMine.m_damage, Explosion.ExplosionSource.ToggleMine);
+            }
+            else
+            {
+                bb++;
             }
         }
     }
@@ -337,6 +403,18 @@ public class MultiplayerHandler : MonoBehaviour
     void Start()
     {
         DontDestroyOnLoad(gameObject);
+    }
+
+    public MultiplayerAbe? FindConnectedByIP(string ip)
+    {
+        foreach (MultiplayerAbe multiplayerAbe in multiplayerAbes)
+        {
+            if (multiplayerAbe.IP == ip)
+            {
+                return multiplayerAbe;
+            }
+        }
+        return null;
     }
 }
 
@@ -388,9 +466,58 @@ public struct MultiplayerAbe
         this.isLocal = isLocal;
         if (isLocal)
         {
-            Core.myAbe = this;
+            Core.handler.myAbe = this;
         }
         Abe = abe;
         PlayerNumber = playerNumber;
+    }
+}
+
+public class Pauser
+{
+    public void PauseAndPrompt()
+    {
+        Core.isPaused = true;
+        Time.timeScale = 0f;
+        MelonLogger.Msg("==== GAME PAUSED ===");
+        MelonLogger.Msg("Enter an invite code and press Enter to connect.");
+        MelonLogger.Msg("Or press F and Enter to start a server.");
+        MelonLogger.Msg("====================");
+
+        Core.inputThread = new Thread(WaitForInput);
+        Core.inputThread.Start();
+    }
+
+    public static void WaitForInput()
+    {
+        while (true)
+        {
+            string input = Console.ReadLine();
+
+            input = input.Trim();
+
+            if (input.ToUpper() == "F")
+            {
+                MelonLogger.Msg("[SERVER] Starting server...");
+                MelonLogger.Msg(IPEncryption.EncryptIP(IPAddress.Any.ToString()));
+                break;
+            }
+            else
+            {
+                MelonLogger.Msg($"[CLIENT] Connecting with invite code: {input}"); 
+                Core.InviteCodeToConnect = IPEncryption.DecryptIP(Core.InviteCodeToConnect);
+                Core.handler.SendMessage(Core.InviteCodeToConnect, 6000, Core.handler.SetupMyAbeMessage(IPAddress.Any.ToString(), "A"));
+                break;
+            }
+        }
+
+        ResumeGame();
+    }
+
+    public static void ResumeGame()
+    {
+        MelonLogger.Msg("=== Resuming game ===");
+        Time.timeScale = 1f;
+        Core.isPaused = false;
     }
 }

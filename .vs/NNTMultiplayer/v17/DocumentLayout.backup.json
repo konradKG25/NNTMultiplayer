@@ -5,6 +5,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|d:\\monorail\\nntmultiplayer\\core.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|solutionrelative:core.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|d:\\monorail\\nntmultiplayer\\nntmultiplayer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|solutionrelative:nntmultiplayer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -26,13 +30,25 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "NNTMultiplayer.csproj",
+              "DocumentMoniker": "D:\\Monorail\\NNTMultiplayer\\NNTMultiplayer.csproj",
+              "RelativeDocumentMoniker": "NNTMultiplayer.csproj",
+              "ToolTip": "D:\\Monorail\\NNTMultiplayer\\NNTMultiplayer.csproj",
+              "RelativeToolTip": "NNTMultiplayer.csproj",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAABkAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-19T12:07:01.678Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Core.cs",
               "DocumentMoniker": "D:\\Monorail\\NNTMultiplayer\\Core.cs",
               "RelativeDocumentMoniker": "Core.cs",
               "ToolTip": "D:\\Monorail\\NNTMultiplayer\\Core.cs",
               "RelativeToolTip": "Core.cs",
-              "ViewState": "AgIAADcAAAAAAAAAAAAkwCIBAAASAAAAAAAAAA==",
+              "ViewState": "AgIAABMBAAAAAAAAAAAmwCUBAAAkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-06-29T17:23:06.622Z",
               "EditorCaption": ""

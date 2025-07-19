@@ -4,7 +4,6 @@ D:\Monorail\NNTMultiplayer\bin\Debug\net35\0Harmony.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\Assembly-CSharp-firstpass.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\Assembly-CSharp.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\Assembly-UnityScript-firstpass.dll
-D:\Monorail\NNTMultiplayer\bin\Debug\net35\Assembly-UnityScript.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\Boo.Lang.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\Hayate.dll
 D:\Monorail\NNTMultiplayer\bin\Debug\net35\MelonLoader.dll
@@ -35,3 +34,4 @@ D:\Monorail\NNTMultiplayer\obj\Debug\net35\NNTMultiplayer.csproj.CoreCompileInpu
 D:\Monorail\NNTMultiplayer\obj\Debug\net35\NNTMulti.952E5C98.Up2Date
 D:\Monorail\NNTMultiplayer\obj\Debug\net35\NNTMultiplayer.dll
 D:\Monorail\NNTMultiplayer\obj\Debug\net35\NNTMultiplayer.pdb
+D:\Monorail\NNTMultiplayer\obj\Debug\net35\NNTMultiplayer.sourcelink.json
