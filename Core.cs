@@ -16,7 +16,6 @@ namespace NNTMultiplayer;
 public class Core : MelonMod
 {
     public static MultiplayerAbe myAbe;
-    public float HowManyAbes;
     public MultiplayerHandler handler;
     public Rect winRect = new Rect(2, 2, 500, 300);
     public string InviteCodeToConnect;
@@ -67,7 +66,7 @@ public class Core : MelonMod
                 a++;
             }
         }
-        if (a == HowManyAbes)
+        if (a == handler.HowManyAbes)
         {
             int b = 0;
             foreach (MultiplayerAbe multiplayerAbe in handler.multiplayerAbes)
@@ -85,19 +84,8 @@ public class Core : MelonMod
         {
             int b = 0;
             myAbe.Abe.gameObject.SetActive(false);
-            foreach (MultiplayerAbe multiplayerAbe in handler.multiplayerAbes)
-            {
-                MultiplayerAbe tempAbe = handler.multiplayerAbes[b];
-                if (!tempAbe.isLocal)
-                {
-                    handler.SendMessage(multiplayerAbe.IP, 6000, "sceneName:" + sceneName + "," + myAbe.PlayerNumber);
-                }
-            }
+            handler.SendMessageToOthers("sceneName:" + sceneName + "," + myAbe.PlayerNumber);
         }
-    }
-
-    public override void OnUpdate()
-    {
     }
 
     public override void OnFixedUpdate()
@@ -108,8 +96,6 @@ public class Core : MelonMod
             {
                 if (!multiplayerAbe.isLocal)
                 {
-                    handler.SendMessage(multiplayerAbe.IP, 6000, "AbePosition:" + GetPos());
-                    handler.SendMessage(multiplayerAbe.IP, 6000, "AbeRotation:" + GetRot());
                 }
             }
         }
@@ -140,7 +126,8 @@ public class MultiplayerHandler : MonoBehaviour
     private Thread listenThread;
     private bool isListening = false;
     public string inviteCode;
-    public float whoAreYou;
+    public MultiplayerAbe myAbe;
+    public float HowManyAbes;
     public List<MultiplayerAbe> multiplayerAbes = new List<MultiplayerAbe>();
 
     /// <summary>
@@ -151,6 +138,17 @@ public class MultiplayerHandler : MonoBehaviour
         using UdpClient sender = new UdpClient();
         byte[] data = Encoding.UTF8.GetBytes(message);
         sender.Send(data, data.Length, ip, port);
+    }
+
+    public void SendMessageToOthers(string message)
+    {
+        foreach (MultiplayerAbe multiplayerAbe in multiplayerAbes)
+        {
+            if (multiplayerAbe.IP != myAbe.IP)
+            {
+                SendMessage(multiplayerAbe.IP, 6000, message);
+            }
+        }
     }
 
     /// <summary>
@@ -191,6 +189,10 @@ public class MultiplayerHandler : MonoBehaviour
                         else if (message.StartsWith("NewAbe:"))
                         {
                             SpawnNewAbeConnection(message);
+                        }
+                        else if (message.StartsWith("sceneName:"))
+                        {
+                            SetSceneNameForAbe(message);
                         }
                     }
                     else
@@ -289,6 +291,42 @@ public class MultiplayerHandler : MonoBehaviour
     public string SetupMyAbeMessage(string ip, string name)
     {
         return "NewAbe:" + ip + "," + name + ",false," + (multiplayerAbes.Count + 1) + "0";
+    }
+
+    public void SetSceneNameForAbe(string message)
+    {
+        string a = message.Split(':')[1];
+        string[] parts = a.Split(',');
+
+        int b = 0;
+        int w = 0;
+
+        foreach (MultiplayerAbe multiplayerAbe in multiplayerAbes)
+        {
+            if (multiplayerAbes[b].PlayerNumber == int.Parse(parts[1]))
+            {
+                MultiplayerAbe abe = multiplayerAbes[b];
+                abe.sceneName = parts[0];
+                multiplayerAbes[b] = abe;
+                w++;
+            }
+            if (multiplayerAbes[b].sceneName == parts[0])
+            {
+                w++;
+            }
+            b++;
+        }
+
+        if (w == HowManyAbes && !Core.myAbe.Abe.activeSelf)
+        {
+            int c = 0;
+            Core.myAbe.Abe.SetActive(true);
+            foreach (MultiplayerAbe abe in multiplayerAbes)
+            {
+                MultiplayerAbe multiplayerAbe = multiplayerAbes[c];
+                multiplayerAbe.Abe = Core.SpawnAnotherAbe(abe.PlayerNumber);
+            }
+        }
     }
 
     // Optional: Automatically clean up on destroy
