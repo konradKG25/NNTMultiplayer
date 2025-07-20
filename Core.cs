@@ -77,19 +77,12 @@ public class Core : MelonMod
             foreach (MultiplayerAbe multiplayerAbe in handler.multiplayerAbes)
             {
                 MultiplayerAbe tempAbe = handler.multiplayerAbes[b];
-                if (!tempAbe.isLocal)
-                {
-                    handler.SendMessage(multiplayerAbe.IP, 6000, "sceneName:" + sceneName + "," + handler.myAbe.PlayerNumber);
-                    tempAbe.Abe = SpawnAnotherAbe(tempAbe.PlayerNumber);
-                    handler.multiplayerAbes[b] = tempAbe;
-                }
             }
         }
         else
         {
             int b = 0;
             handler.myAbe.Abe.gameObject.SetActive(false);
-            handler.SendMessageToOthers("sceneName:" + sceneName + "," + handler.myAbe.PlayerNumber);
         }
     }
 
@@ -97,19 +90,7 @@ public class Core : MelonMod
     {
         if (handler.myAbe.Abe != null)
         {
-            handler.SendMessageToOthers("AbePosition:" + GetPos());
-            handler.SendMessageToOthers("AbeRotation:" + GetRot());
         }
-    }
-    
-    public string GetPos()
-    {
-        return handler.myAbe.Abe.transform.position.x + "," + handler.myAbe.Abe.transform.position.y + "," + handler.myAbe.Abe.transform.position.z + "," + handler.myAbe.IP;
-    }
-
-    public string GetRot()
-    {
-        return handler.myAbe.Abe.transform.rotation.x + "," + handler.myAbe.Abe.transform.rotation.y + "," + handler.myAbe.Abe.transform.rotation.z + "," + handler.myAbe.IP;
     }
 
     public static GameObject SpawnAnotherAbe(int playerNumber)
@@ -130,16 +111,7 @@ public class MultiplayerHandler : MonoBehaviour
     public MultiplayerAbe myAbe;
     public float HowManyAbes;
     public List<MultiplayerAbe> multiplayerAbes = new List<MultiplayerAbe>();
-
-    /// <summary>
-    /// Sends a UDP message to the specified IP and port.
-    /// </summary>
-    public void SendMessage(string ip, int port, string message)
-    {
-        using UdpClient sender = new UdpClient();
-        byte[] data = Encoding.UTF8.GetBytes(message);
-        sender.Send(data, data.Length, ip, port);
-    }
+    public IPEndPoint remoteEP;
 
     public void SendMessageToOthers(string message)
     {
@@ -147,9 +119,63 @@ public class MultiplayerHandler : MonoBehaviour
         {
             if (multiplayerAbe.IP != myAbe.IP)
             {
-                SendMessage(multiplayerAbe.IP, 6000, message);
             }
         }
+    }
+
+    public enum PlayerAction : byte
+    {
+        SetPosition,
+        SetRotation,
+        NewPlayer,
+        MineExplode,
+        MineExplodeB,
+        MineExplodeC
+    }
+
+    // This enforces the struct will be "packed", i.e. its contents will be laid sequentially in memory:
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PositionPacket
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public string IP { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RotationPacket
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public string IP { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NewPlayerPacket
+    {
+        public string IP { get; set; }
+        public bool isLocal { get; set; }
+        public bool B { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MineExplode
+    {
+        public float Wich { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MineExplodeB
+    {
+        public float Wich { get; set; }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MineExplodeC
+    {
+        public float Wich { get; set; }
     }
 
     /// <summary>
@@ -168,7 +194,7 @@ public class MultiplayerHandler : MonoBehaviour
 
         listenThread = new Thread(() =>
         {
-            IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
+            remoteEP = new IPEndPoint(IPAddress.Any, 0);
 
             try
             {
@@ -177,35 +203,31 @@ public class MultiplayerHandler : MonoBehaviour
                     if (listener.Available > 0)
                     {
                         byte[] data = listener.Receive(ref remoteEP);
-                        string message = Encoding.UTF8.GetString(data);
-                        MelonLogger.Msg($"Received from {remoteEP}: {message}");
-                        if (message.StartsWith("AbePosition:"))
+
+                        PlayerAction action = (PlayerAction)data[0];
+                        if (action == PlayerAction.SetPosition)
                         {
-                            SetAbePos(message);
+                            
                         }
-                        else if (message.StartsWith("AbeRotation:"))
+                        else if (action == PlayerAction.SetRotation)
                         {
-                            SetAbeRot(message);
+
                         }
-                        else if (message.StartsWith("NewAbe:"))
+                        else if (action == PlayerAction.NewPlayer)
                         {
-                            SpawnNewAbeConnection(message);
+
                         }
-                        else if (message.StartsWith("sceneName:"))
+                        else if (action == PlayerAction.MineExplode)
                         {
-                            SetSceneNameForAbe(message);
+
                         }
-                        else if (message.StartsWith("mineExplode:"))
+                        else if (action == PlayerAction.MineExplodeB)
                         {
-                            mineExplode(message);
+
                         }
-                        else if (message.StartsWith("mineExplodeB:"))
+                        else if (action == PlayerAction.MineExplodeC)
                         {
-                            mineExplodeB(message);
-                        }
-                        else if (message.StartsWith("mineExplodeC:"))
-                        {
-                            mineExplodeC(message);
+
                         }
                     }
                     else
@@ -224,6 +246,37 @@ public class MultiplayerHandler : MonoBehaviour
         };
 
         listenThread.Start();
+    }
+
+    void ByteArrayToStructure(byte[] bytearray, ref object obj)
+    {
+        int len = Marshal.SizeOf(obj);
+        IntPtr i = Marshal.AllocHGlobal(len);
+        Marshal.Copy(bytearray, 0, i, len);
+        obj = Marshal.PtrToStructure(i, obj.GetType());
+        Marshal.FreeHGlobal(i);
+    }
+
+    public void SetAbePosition()
+    {
+        byte[] packet = listener.Receive(ref remoteEP);
+        PositionPacket pp = new PositionPacket();
+
+        object obj = pp;
+        ByteArrayToStructure(packet, ref obj);
+        pp = (PositionPacket)obj;
+
+        Vector3 newPos = new Vector3(pp.X, pp.Y, pp.Z);
+        FindConnectedByIP(pp.IP).Value.Abe.transform.position = newPos;
+    }
+
+    public MultiplayerAbe? FindConnectedByIP(string IP)
+    {
+        foreach (MultiplayerAbe p in multiplayerAbes)
+        {
+            if (p.IP == IP) return p;
+        }
+        return null;
     }
 
     /// <summary>
@@ -249,152 +302,6 @@ public class MultiplayerHandler : MonoBehaviour
         listenThread = null;
     }
 
-    public void SetAbePos(string message)
-    {
-        string coords = message.Split(':')[1]; // "x,y,z"
-        string[] parts = coords.Split(',');
-
-        if (parts.Length >= 3 &&
-            float.TryParse(parts[0], out float x) &&
-            float.TryParse(parts[1], out float y) &&
-            float.TryParse(parts[2], out float z))
-        {
-            Vector3 newPos = new Vector3(x, y, z);
-            FindConnectedByIP(parts[3]).Value.Abe.transform.position = newPos;
-        }
-    }
-
-    public void SetAbeRot(string message)
-    {
-        string coords = message.Split(':')[1]; // "x,y,z"
-        string[] parts = coords.Split(',');
-
-        if (parts.Length >= 3 &&
-            float.TryParse(parts[0], out float x) &&
-            float.TryParse(parts[1], out float y) &&
-            float.TryParse(parts[2], out float z))
-        {
-            Quaternion newRot = Quaternion.Euler(x, y, z);
-            FindConnectedByIP(parts[3]).Value.Abe.transform.rotation = newRot;
-        }
-    }
-
-    public void SpawnNewAbeConnection(string message)
-    {
-        string coords = message.Split(':')[1];
-        string[] parts = coords.Split(',');
-
-        bool.TryParse(parts[2], out bool b);
-
-        multiplayerAbes.Add(new MultiplayerAbe(parts[0], parts[1], b, multiplayerAbes.Count + 1, new GameObject("abe")));
-        if (int.TryParse(parts[3], out int w) && w == 0)
-        {
-            string bb = message.Replace(",0", ",1");
-            SendMessage(parts[0], 6000, bb);
-            SendMessageToOthers(bb);
-        }
-    }
-
-    public string SetupOtherAbeMessage(string ip, string name)
-    {
-        return "NewAbe:"+ip+","+name+",false,"+(multiplayerAbes.Count + 1)+"1";
-    }
-
-    public string SetupMyAbeMessage(string ip, string name)
-    {
-        return "NewAbe:" + ip + "," + name + ",false," + (multiplayerAbes.Count + 1) + "0";
-    }
-
-    public void SetSceneNameForAbe(string message)
-    {
-        string a = message.Split(':')[1];
-        string[] parts = a.Split(',');
-
-        int b = 0;
-        int w = 0;
-
-        foreach (MultiplayerAbe multiplayerAbe in multiplayerAbes)
-        {
-            if (multiplayerAbes[b].PlayerNumber == int.Parse(parts[1]))
-            {
-                MultiplayerAbe abe = multiplayerAbes[b];
-                abe.sceneName = parts[0];
-                multiplayerAbes[b] = abe;
-                w++;
-            }
-            if (multiplayerAbes[b].sceneName == parts[0])
-            {
-                w++;
-            }
-            b++;
-        }
-
-        if (w == HowManyAbes && !myAbe.Abe.activeSelf)
-        {
-            int c = 0;
-            myAbe.Abe.SetActive(true);
-            foreach (MultiplayerAbe abe in multiplayerAbes)
-            {
-                MultiplayerAbe multiplayerAbe = multiplayerAbes[c];
-                multiplayerAbe.Abe = Core.SpawnAnotherAbe(abe.PlayerNumber);
-            }
-        }
-    }
-
-    public void mineExplode(string message)
-    {
-        string a = message.Split(':')[1];
-        int.TryParse(a, out var b);
-        int bb = 0;
-        foreach (FlyingMine flyingMine in GameObject.FindObjectsOfType<FlyingMine>())
-        {
-            if (bb == b)
-            {
-                flyingMine.Explode(true, flyingMine.m_damage, Explosion.ExplosionSource.FlyingMine);
-            }
-            else
-            {
-                bb++;
-            }
-        }
-    }
-
-    public void mineExplodeB(string message)
-    {
-        string a = message.Split(':')[1];
-        int.TryParse(a, out var b);
-        int bb = 0;
-        foreach (ProximityMine proximityMine in GameObject.FindObjectsOfType<ProximityMine>())
-        {
-            if (bb == b)
-            {
-                proximityMine.Explode(true, proximityMine.m_damage, Explosion.ExplosionSource.ProximityMine);
-            }
-            else
-            {
-                bb++;
-            }
-        }
-    }
-
-    public void mineExplodeC(string message)
-    {
-        string a = message.Split(':')[1];
-        int.TryParse(a, out var b);
-        int bb = 0;
-        foreach (ToggleMine toggleMine in GameObject.FindObjectsOfType<ToggleMine>())
-        {
-            if (bb == b)
-            {
-                toggleMine.Explode(true, toggleMine.m_damage, Explosion.ExplosionSource.ToggleMine);
-            }
-            else
-            {
-                bb++;
-            }
-        }
-    }
-
     // Optional: Automatically clean up on destroy
     private void OnDestroy()
     {
@@ -403,18 +310,6 @@ public class MultiplayerHandler : MonoBehaviour
     void Start()
     {
         DontDestroyOnLoad(gameObject);
-    }
-
-    public MultiplayerAbe? FindConnectedByIP(string ip)
-    {
-        foreach (MultiplayerAbe multiplayerAbe in multiplayerAbes)
-        {
-            if (multiplayerAbe.IP == ip)
-            {
-                return multiplayerAbe;
-            }
-        }
-        return null;
     }
 }
 
@@ -453,23 +348,17 @@ public static class IPEncryption
 public struct MultiplayerAbe
 {
     public string IP;
-    public string Name;
-    public int PlayerNumber;
-    public bool isLocal;
     public string sceneName;
     public GameObject Abe;
 
-    public MultiplayerAbe(string IP, string Name, bool isLocal, int playerNumber, GameObject abe)
+    public MultiplayerAbe(string IP, bool isLocal, GameObject abe)
     {
         this.IP = IP;
-        this.Name = Name;
-        this.isLocal = isLocal;
         if (isLocal)
         {
             Core.handler.myAbe = this;
         }
         Abe = abe;
-        PlayerNumber = playerNumber;
     }
 }
 
@@ -506,7 +395,6 @@ public class Pauser
             {
                 MelonLogger.Msg($"[CLIENT] Connecting with invite code: {input}"); 
                 Core.InviteCodeToConnect = IPEncryption.DecryptIP(Core.InviteCodeToConnect);
-                Core.handler.SendMessage(Core.InviteCodeToConnect, 6000, Core.handler.SetupMyAbeMessage(IPAddress.Any.ToString(), "A"));
                 break;
             }
         }

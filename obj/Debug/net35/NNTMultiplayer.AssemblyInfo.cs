@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NNTMultiplayer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dad46145b3620b34c40d497a8a6734f25faf0216")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc2fa1db66e072410148245a4bbb28d1185d23cb")]
 [assembly: System.Reflection.AssemblyProductAttribute("NNTMultiplayer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NNTMultiplayer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
