@@ -241,19 +241,19 @@ public class MultiplayerHandler : MonoBehaviour
                         PlayerAction action = (PlayerAction)data[0];
                         if (action == PlayerAction.SetPosition)
                         {
-                            SetAbePosition();
+                            GetSetAbePosition();
                         }
                         else if (action == PlayerAction.SetRotation)
                         {
-                            SetAbeRotation();
+                            GetSetAbeRotation();
                         }
                         else if (action == PlayerAction.NewPlayer)
                         {
-                            NewPlayer();
+                            GetNewPlayer();
                         }
                         else if (action == PlayerAction.AbeSceneChange)
                         {
-                            ChangeSceneNameForAbe();
+                            GetChangeSceneNameForAbe();
                         }
                     }
                     else
@@ -294,7 +294,7 @@ public class MultiplayerHandler : MonoBehaviour
         Marshal.FreeHGlobal(i);
     }
 
-    public void SetAbePosition()
+    public void GetSetAbePosition()
     {
         byte[] packet = listener.Receive(ref remoteEP);
         PositionPacket pp = new PositionPacket();
@@ -303,11 +303,19 @@ public class MultiplayerHandler : MonoBehaviour
         ByteArrayToStructure(packet, ref obj);
         pp = (PositionPacket)obj;
 
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            SetAbePosition(pp);
+        });
+    }
+
+    public void SetAbePosition(PositionPacket pp)
+    {
         Vector3 newPos = new Vector3(pp.X, pp.Y, pp.Z);
         FindConnectedByIP(pp.IP).Abe.transform.position = newPos;
     }
 
-    public void SetAbeRotation()
+    public void GetSetAbeRotation()
     {
         byte[] packet = listener.Receive(ref remoteEP);
         RotationPacket pp = new RotationPacket();
@@ -316,11 +324,19 @@ public class MultiplayerHandler : MonoBehaviour
         ByteArrayToStructure(packet, ref obj);
         pp = (RotationPacket)obj;
 
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            SetAbeRotation(pp);
+        });
+    }
+
+    public void SetAbeRotation(RotationPacket pp)
+    {
         Quaternion newRot = Quaternion.Euler(pp.X, pp.Y, pp.Z);
         FindConnectedByIP(pp.IP).Abe.transform.rotation = newRot;
     }
 
-    public void NewPlayer()
+    public void GetNewPlayer()
     {
         byte[] packet = listener.Receive(ref remoteEP);
         NewPlayerPacket pp = new NewPlayerPacket();
@@ -329,6 +345,14 @@ public class MultiplayerHandler : MonoBehaviour
         ByteArrayToStructure(packet, ref obj);
         pp = (NewPlayerPacket)obj;
 
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            NewPlayer(pp);
+        });
+    }
+
+    public void NewPlayer(NewPlayerPacket pp)
+    {
         multiplayerAbes.Add(new MultiplayerAbe(pp.IP, pp.isLocal, new GameObject("abe")));
         if (pp.GetMy)
         {
@@ -387,7 +411,7 @@ public class MultiplayerHandler : MonoBehaviour
         return StructureToByteArray(pp);
     }
 
-    public void ChangeSceneNameForAbe()
+    public void GetChangeSceneNameForAbe()
     {
         byte[] packet = listener.Receive(ref remoteEP);
         ChangeScenePacket pp = new ChangeScenePacket();
@@ -396,6 +420,14 @@ public class MultiplayerHandler : MonoBehaviour
         ByteArrayToStructure(packet, ref obj);
         pp = (ChangeScenePacket)obj;
 
+        MainThreadDispatcher.Enqueue(() =>
+        {
+            ChangeSceneNameForAbe(pp);
+        });
+    }
+
+    public void ChangeSceneNameForAbe(ChangeScenePacket pp)
+    {
         MultiplayerAbe multiplayerAbe = FindConnectedByIP(pp.IP);
         multiplayerAbe.sceneName = pp.SCENE;
 
@@ -589,6 +621,7 @@ public class Pauser
 
     public static void WaitForInput()
     {
+        string a = "";
         while (true)
         {
             string input = Console.ReadLine();
@@ -603,15 +636,21 @@ public class Pauser
             }
             else
             {
-                MelonLogger.Msg($"[CLIENT] Connecting with invite code: {input}"); 
-                Core.InviteCodeToConnect = IPEncryption.DecryptIP(input);
-                Core.handler.SendPacket(Core.handler.NewPlayerPacketCreateData(IPAddress.Any.ToString(), false, false, false), Core.InviteCodeToConnect, 6000);
-                Core.handler.NewPlayerPacketCreate(IPAddress.Any.ToString(), false, false, false, false, true, "");
+                MelonLogger.Msg($"[CLIENT] Connecting with invite code: {input}");
+                a = input;
                 break;
             }
         }
 
         ResumeGame();
+
+        if (a != "")
+        {
+            Core.InviteCodeToConnect = IPEncryption.DecryptIP(a);
+            Core.handler.SendPacket(Core.handler.NewPlayerPacketCreateData(IPAddress.Any.ToString(), false, false, false), Core.InviteCodeToConnect, 6000);
+            Core.handler.NewPlayerPacketCreate(IPAddress.Any.ToString(), false, false, false, false, true, "");
+            MelonLogger.Msg("Connected!");
+        }
     }
 
     public static void ResumeGame()

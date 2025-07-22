@@ -7,6 +7,10 @@
       "RelativeMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|solutionrelative:core.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|d:\\monorail\\nntmultiplayer\\mainthreaddispatcher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|solutionrelative:mainthreaddispatcher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|d:\\monorail\\nntmultiplayer\\nntmultiplayer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
       "RelativeMoniker": "D:0:0:{83B87C3C-A3FC-4B89-AE0C-DDAB5CF14C22}|NNTMultiplayer.csproj|solutionrelative:nntmultiplayer.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
@@ -18,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -31,6 +35,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "MainThreadDispatcher.cs",
+              "DocumentMoniker": "D:\\Monorail\\NNTMultiplayer\\MainThreadDispatcher.cs",
+              "RelativeDocumentMoniker": "MainThreadDispatcher.cs",
+              "ToolTip": "D:\\Monorail\\NNTMultiplayer\\MainThreadDispatcher.cs",
+              "RelativeToolTip": "MainThreadDispatcher.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-22T12:35:51.7Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "NNTMultiplayer.csproj",
               "DocumentMoniker": "D:\\Monorail\\NNTMultiplayer\\NNTMultiplayer.csproj",
               "RelativeDocumentMoniker": "NNTMultiplayer.csproj",
@@ -48,7 +65,7 @@
               "RelativeDocumentMoniker": "Core.cs",
               "ToolTip": "D:\\Monorail\\NNTMultiplayer\\Core.cs",
               "RelativeToolTip": "Core.cs",
-              "ViewState": "AgIAAGYCAAAAAAAAAAAswO4AAAA8AAAAAAAAAA==",
+              "ViewState": "AgIAAOkAAAAAAAAAAAAcwAYBAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-06-29T17:23:06.622Z",
               "EditorCaption": ""

@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "NNTMultiplayer.csproj",
+        "Action": "Start",
+        "DebugTarget": "NNT"
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NNTMultiplayer": {
+      "commandName": "Project"
+    },
+    "NNT": {
+      "commandName": "Executable",
+      "executablePath": "D:\\Games\\Oddworld - New 'n' Tasty\\NNT.exe"
+    }
+  }
+}
