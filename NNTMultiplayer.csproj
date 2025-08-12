@@ -64,7 +64,6 @@
 
 	<ItemGroup>
 		<Compile Include="Core.cs" />
-		<Compile Include="MainThreadDispatcher.cs" />
 	</ItemGroup>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
